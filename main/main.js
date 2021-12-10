@@ -48,7 +48,7 @@ const ffi = require('ffi-napi');
 const startNewProcess = (hwnd) => {
   const handler = endianness() == "LE" ? hwnd.readInt32LE() : hwnd.readInt32BE();
   spawn('unity/Child.exe', [
-      `-parentHWND ${handler}`
+      `-parentHWND ${handler} delayed`
   ], {
     windowsVerbatimArguments: true
   });
