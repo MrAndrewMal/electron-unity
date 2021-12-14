@@ -10,9 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "electron": "13.5.1",
-    "ffi-napi": "4.0.3",
-    "ref-napi": "3.0.3"
+    "electron": "13.5.1"
   },
   "engines": {
     "node": "^12.20 || >= 14.13",
