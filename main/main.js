@@ -2,11 +2,32 @@ const { app, BrowserWindow } = require('electron')
 const path = require('path')
 const { endianness } = require('os')
 const { spawn } = require('child_process')
+const ref = require('ref-napi')
+const ffi = require('ffi-napi')
 
 let electronWindow = null
 let childElectronWindow = null
+let hwndClient = null
 
 const OFFSET_Y = 100
+
+const GW_STYLE = {
+  WS_CLIPSIBLINGS: 0x004000000,
+  WS_CLIPCHILDREN: 0x002000000
+}
+
+const voidPtr = ref.refType(ref.types.void)
+const stringPtr = ref.refType(ref.types.CString)
+
+const user32 = new ffi.Library('user32', {
+  'MoveWindow': ['bool', ['int32', 'int', 'int', 'int', 'int', 'bool']],
+  'EnumChildWindows': ['bool', ['int32', voidPtr, 'int32']],
+  'GetWindowTextA': ['long', ['long', stringPtr, 'long']],
+  'SendMessageA': ['int', ['int32', 'int32', 'int32', 'int32']],
+  'SetParent': ['int32', ['int32', 'int32']],
+  'GetWindowLongPtrA': ['int32', ['int32', 'int32']],
+  'SetWindowLongPtrA': ['int', ['int', 'int', 'int']]
+})
 
 const startNewProcess = (hwnd) => {
   // Convert handler from Electron 
@@ -17,6 +38,32 @@ const startNewProcess = (hwnd) => {
   ], {
     windowsVerbatimArguments: true
   });
+
+  const res = user32.GetWindowLongPtrA(handler, -16)
+  // Fix flicker unity window when resize
+  if (!(res & GW_STYLE.WS_CLIPCHILDREN)) {
+    user32.SetWindowLongPtrA(handler, -16, res ^ GW_STYLE.WS_CLIPCHILDREN ^ GW_STYLE.WS_CLIPSIBLINGS)
+  }
+
+  const callback = ffi.Callback('bool', ['int32', 'int32'],
+  (hwnd, param) => {
+    const buf = new Buffer(255)
+    user32.GetWindowTextA(hwnd, buf, 255)
+    const name = ref.readCString(buf, 0)
+
+    if (name === 'EmbeddedWindow') {
+      hwndClient = hwnd
+      user32.SetParent(hwnd, handler)
+      user32.SendMessageA(hwnd, 0x0006, 1, 0)
+    }
+
+    return 0
+  })
+
+  setTimeout(() => {
+    user32.EnumChildWindows(handler, callback, null) // Find hwnd to spawn application
+  }, 1000)
+
 }
 
 /**
@@ -25,11 +72,12 @@ const startNewProcess = (hwnd) => {
 
 const createWindow = () => {
   electronWindow = new BrowserWindow({
-    backgroundColor: '#3f3f3f',
+    backgroundColor: '#ffffff',
     width: 800,
     height: 600,
   })
 
+  // Spawn new electron window for unity application
   childElectronWindow = new BrowserWindow({ 
     parent: electronWindow,
     transparent: true,
@@ -53,9 +101,12 @@ function resizeChildWindow() {
   childElectronWindow.setBounds({
     x: paranetBounds.x,
     y: (paranetBounds.y + OFFSET_Y),
-    width: 300,
-    height: 300
+    width: paranetBounds.width,
+    height: (paranetBounds.height - OFFSET_Y)
   })
+
+  const childBounds = childElectronWindow.getContentBounds()
+  user32.MoveWindow(hwndClient, 0, 0, childBounds.width, childBounds.height, false)
 }
 
 function restoreChildWindow() {
