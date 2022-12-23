@@ -82,6 +82,7 @@ const createWindow = () => {
     parent: electronWindow,
     transparent: true,
     frame: false,
+    resizable: false
   })
 
   electronWindow.show()
