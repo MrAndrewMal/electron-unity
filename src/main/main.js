@@ -1,9 +1,9 @@
-const { app, BrowserWindow } = require('electron')
-const path = require('path')
-const { endianness } = require('os')
-const { spawn } = require('child_process')
-const ref = require('ref-napi')
-const ffi = require('ffi-napi')
+import { app, BrowserWindow } from 'electron'
+import path from 'path'
+import { endianness } from 'os'
+import { spawn } from 'child_process'
+import ref from 'ref-napi'
+import ffi from 'ffi-napi'
 
 let electronWindow = null
 let childElectronWindow = null
@@ -46,7 +46,7 @@ const startNewProcess = (hwnd) => {
   }
 
   const callback = ffi.Callback('bool', ['int32', 'int32'],
-  (hwnd, param) => {
+  (hwnd) => {
     const buf = new Buffer(255)
     user32.GetWindowTextA(hwnd, buf, 255)
     const name = ref.readCString(buf, 0)
