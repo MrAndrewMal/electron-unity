@@ -18,9 +18,11 @@ function createWindow(): void {
     },
   });
 
+  childWindow = new ChildUnityWindow(mainWindow);
+
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();
-    childWindow = new ChildUnityWindow(mainWindow);
+    childWindow?.showWindow();
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
