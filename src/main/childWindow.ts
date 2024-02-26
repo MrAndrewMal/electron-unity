@@ -31,6 +31,7 @@ export default class ChildUnityWindow {
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
+    this.createWindow();
   }
 
   startNewProcess(hwnd) {
@@ -42,13 +43,13 @@ export default class ChildUnityWindow {
       windowsVerbatimArguments: true,
     });
 
-    const res = user32.GetWindowLongPtrA(handler, -16);
+    const longPointer = user32.GetWindowLongPtrA(handler, -16);
     // Fix flicker unity window when resize
-    if (!(res & GW_STYLE.WS_CLIPCHILDREN)) {
+    if (!(longPointer & GW_STYLE.WS_CLIPCHILDREN)) {
       user32.SetWindowLongPtrA(
         handler,
         -16,
-        res ^ GW_STYLE.WS_CLIPCHILDREN ^ GW_STYLE.WS_CLIPSIBLINGS
+        longPointer ^ GW_STYLE.WS_CLIPCHILDREN ^ GW_STYLE.WS_CLIPSIBLINGS
       );
     }
 
@@ -72,20 +73,19 @@ export default class ChildUnityWindow {
   }
 
   createWindow() {
-    // Spawn new electron window for unity application
     this.childElectronWindow = new BrowserWindow({
       parent: this.mainWindow,
       transparent: true,
       frame: false,
       resizable: false,
     });
+  }
 
-    this.mainWindow.on("ready-to-show", () => {
-      const hwnd = this.childElectronWindow.getNativeWindowHandle();
-      this.startNewProcess(hwnd);
-      this.subscribe();
-      this.resizeChildWindow();
-    });
+  showWindow() {
+    const hwnd = this.childElectronWindow.getNativeWindowHandle();
+    this.startNewProcess(hwnd);
+    this.subscribe();
+    this.resizeChildWindow();
   }
 
   resizeChildWindow() {
@@ -115,19 +115,22 @@ export default class ChildUnityWindow {
   }
 
   subscribe() {
-    this.mainWindow.on("move", this.resizeChildWindow);
-    this.mainWindow.on("resize", this.resizeChildWindow);
+    this.mainWindow.on("move", this.resizeChildWindow.bind(this));
+    this.mainWindow.on("resize", this.resizeChildWindow.bind(this));
     this.mainWindow.on("minimize", this.childElectronWindow.minimize);
-    this.mainWindow.on("restore", this.restoreChildWindow);
+    this.mainWindow.on("restore", this.restoreChildWindow.bind(this));
   }
 
   unsubscribe() {
-    this.mainWindow.removeListener("move", this.resizeChildWindow);
-    this.mainWindow.removeListener("resize", this.resizeChildWindow);
+    this.mainWindow.removeListener("move", this.resizeChildWindow.bind(this));
+    this.mainWindow.removeListener("resize", this.resizeChildWindow.bind(this));
     this.mainWindow.removeListener(
       "minimize",
       this.childElectronWindow.minimize
     );
-    this.mainWindow.removeListener("restore", this.restoreChildWindow);
+    this.mainWindow.removeListener(
+      "restore",
+      this.restoreChildWindow.bind(this)
+    );
   }
 }
