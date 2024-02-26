@@ -11,7 +11,7 @@ files:
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
 asarUnpack:
   - resources/**
-  - unity/**
+extraResources: [{ "from": "unity/", "to": "../unity" }]
 win:
   executableName: electron-unity
 nsis:
