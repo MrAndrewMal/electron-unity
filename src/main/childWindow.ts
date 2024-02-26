@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 import { endianness } from "os";
-import { spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import ref from "ref-napi";
 import ffi from "ffi-napi";
 
@@ -28,6 +28,7 @@ export default class ChildUnityWindow {
   mainWindow: BrowserWindow;
   childElectronWindow: BrowserWindow;
   hwndClient: "";
+  child: ChildProcessWithoutNullStreams;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
@@ -39,7 +40,7 @@ export default class ChildUnityWindow {
     const handler =
       endianness() == "LE" ? hwnd.readInt32LE() : hwnd.readInt32BE();
 
-    spawn("unity/Child.exe", [`-parentHWND ${handler} delayed`], {
+    this.child = spawn("unity/Child.exe", [`-parentHWND ${handler} delayed`], {
       windowsVerbatimArguments: true,
     });
 
@@ -122,15 +123,14 @@ export default class ChildUnityWindow {
   }
 
   unsubscribe() {
-    this.mainWindow.removeListener("move", this.resizeChildWindow.bind(this));
-    this.mainWindow.removeListener("resize", this.resizeChildWindow.bind(this));
+    this.child.kill();
+
+    this.mainWindow.removeListener("move", this.resizeChildWindow);
+    this.mainWindow.removeListener("resize", this.resizeChildWindow);
     this.mainWindow.removeListener(
       "minimize",
       this.childElectronWindow.minimize
     );
-    this.mainWindow.removeListener(
-      "restore",
-      this.restoreChildWindow.bind(this)
-    );
+    this.mainWindow.removeListener("restore", this.restoreChildWindow);
   }
 }
