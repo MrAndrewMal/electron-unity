@@ -2,8 +2,12 @@
   "name": "electron-unity",
   "version": "1.0.0",
   "description": "Embedded unity3d application in electron",
-  "main": "src/main/main.js",
-  "keywords": ["embedded unity3d", "unity3d", "electron"],
+  "main": "./out/main/index.js",
+  "keywords": [
+    "embedded unity3d",
+    "unity3d",
+    "electron"
+  ],
   "author": "Andrei Malyi <me@maloo.dev>",
   "license": "ISC",
   "repository": {
@@ -23,6 +27,10 @@
     "postinstall": "electron-builder install-app-deps",
     "build:win": "npm run build && electron-builder --win --config"
   },
+  "engines" : { 
+    "npm" : ">=6.14.18 <10.2.4",
+    "node" : ">=14 <18.19.1"
+  },
   "dependencies": {
     "ffi-napi": "4.0.3",
     "ref-napi": "3.0.3",
@@ -32,7 +40,7 @@
   "devDependencies": {
     "@electron-toolkit/tsconfig": "1.0.1",
     "@types/node": "18.17.5",
-    "electron": "25.6.0",
+    "electron": "20.3.8",
     "electron-builder": "24.6.3",
     "electron-vite": "1.0.27",
     "typescript": "5.1.6",
